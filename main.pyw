@@ -7,12 +7,15 @@ import sqlite3
 from datetime import datetime
 from threading import Thread
 from dataclasses import dataclass
+import os
 
 BUTTON_WIDTH = 10
 PADDING = 8
 DATETIME_FORMAT_DISPLAY = "%H:%M:%S %d.%m.%y"
-TIMER_DELAY = 500
+TIMER_DELAY = 1000
 AUTOSAVE_PERIOD = 5000
+
+DEBUG = os.getenv("DEBUG")
 
 
 @dataclass
@@ -155,7 +158,7 @@ class WorkTimerInterface(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.db = WorkTimerDatabase("database.sqlite3")
+        self.db = WorkTimerDatabase("debug_database.sqlite3" if DEBUG else "database.sqlite3")
         self.default_rate = self.db.get_default_rate()
         self.timer_active = False
         self.current_project: Project | None = None
@@ -235,6 +238,7 @@ class WorkTimerInterface(tk.Tk):
             while self.timer_active:
                 print("timer")
                 now = datetime.now()
+                self.current_record.end_datetime = now
                 seconds = int((now - self.current_record.start_datetime).total_seconds())
                 self.projects_table.set(self.current_record.treeview_item, "end_datetime",
                                         now.strftime(DATETIME_FORMAT_DISPLAY))
@@ -242,6 +246,7 @@ class WorkTimerInterface(tk.Tk):
                                         format_seconds(seconds))
                 self.projects_table.set(self.current_record.treeview_item, "money",
                                         format_money(calculate_money(seconds, self.current_project.rate)))
+                self.update_project(self.current_project)
                 sleep(TIMER_DELAY / 1000)
 
         def autosave():
@@ -274,6 +279,7 @@ class WorkTimerInterface(tk.Tk):
                                 format_seconds(seconds))
         self.projects_table.set(self.current_record.treeview_item, "money",
                                 format_money(calculate_money(seconds, self.current_project.rate)))
+        self.update_project(self.current_project)
         self.update_buttons()
 
     def create_new_project(self):
@@ -370,6 +376,20 @@ class WorkTimerInterface(tk.Tk):
             self.start_button.config(state="disabled")
             self.pause_button.config(state="disabled")
 
+    def update_project(self, project: Project):
+        total_seconds = sum(map(lambda record: int((record.end_datetime - record.start_datetime).total_seconds()),
+                                project.work_records))
+        print("update project", total_seconds)
+        self.projects_table.set(project.treeview_item,
+                                "end_datetime",
+                                project.work_records[-1].end_datetime.strftime(DATETIME_FORMAT_DISPLAY))
+        self.projects_table.set(project.treeview_item,
+                                "total_time",
+                                format_seconds(total_seconds))
+        self.projects_table.set(project.treeview_item,
+                                "money",
+                                format_money(calculate_money(total_seconds, project.rate)))
+
     def set_default_rate(self):
         new_rate = askfloat("Ставка по умолчанию",
                         f"Текущая ставка = {format_money(self.default_rate)} Укажи новую ставку в рублях:")
@@ -407,6 +427,7 @@ class WorkTimerInterface(tk.Tk):
 
     def on_close(self):
         print("Destroying window...")
+        self.timer_active = False
         self.destroy()
 
 
