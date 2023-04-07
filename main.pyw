@@ -122,13 +122,13 @@ class WorkTimerDatabase:
         return project
 
     def update_project(self, project: Project, *, name = None, rate = None, active = None):
-        if name:
+        if name is not None:
             project.name = name
             self.db_cur.execute("UPDATE project SET description = ? WHERE id = ?", [name, project.id])
-        if rate:
+        if rate is not None:
             project.rate = rate
             self.db_cur.execute("UPDATE project SET rate = ? WHERE id = ?", [rate, project.id])
-        if active:
+        if active is not None:
             project.active = False
             self.db_cur.execute("UPDATE project SET active = FALSE WHERE id = ?", [project.id])
         self.db_con.commit()
