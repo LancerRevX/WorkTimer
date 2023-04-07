@@ -96,7 +96,7 @@ class WorkTimerDatabase:
         def work_record_from_data(data):
             return WorkRecord(data[0], datetime.fromisoformat(data[1]), datetime.fromisoformat(data[2]))
         projects_data = \
-            self.db_cur.execute("SELECT id, description, active, rate FROM project").fetchall()
+            self.db_cur.execute("SELECT id, description, active, rate FROM project ORDER BY active").fetchall()
         work_records_data = \
             self.db_cur.execute("SELECT id, start_datetime, end_datetime, project_id FROM work_record").fetchall()
         projects = []
