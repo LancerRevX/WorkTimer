@@ -311,6 +311,20 @@ class WorkTimerInterface(tk.Tk):
                                        ])
 
     def insert_project_into_treeview(self, project: Project):
+        def open_popup_menu(event, project: Project):
+            menu = tk.Menu(self, tearoff=0)
+            menu.add_command(label="Переименовать", command=lambda: self.rename_project(project))
+            menu.add_command(label="Изменить ставку", command=lambda: self.change_project_rate(project))
+            menu.add_command(label="Завершить", command=lambda: self.finish_project(project))
+            if not project.active:
+                menu.entryconfigure("Переименовать", state="disabled")
+                menu.entryconfigure("Изменить ставку", state="disabled")
+                menu.entryconfigure("Завершить", state="disabled")
+            try:
+                menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                menu.grab_release()
+
         project.treeview_item = self.projects_table.insert("", 0, values=[
             project.id, project.name, format_status(project.active), format_money(project.rate)])
 
@@ -338,15 +352,15 @@ class WorkTimerInterface(tk.Tk):
                                 "money",
                                 format_money(calculate_money(total_seconds, project.rate)))
 
-        if project.active:
-            self.projects_table.item(project.treeview_item,
-                                     open=True,
-                                     tags=["active", project.treeview_item])
-            self.projects_table.tag_bind(project.treeview_item,
-                                         "<Button-1>",
-                                         lambda event: self.select_project(project))
-        else:
-            self.projects_table.item(project.treeview_item, tags=["finished"])
+        self.projects_table.item(project.treeview_item,
+                                 open=True,
+                                 tags=["active" if project.active else "finished", project.treeview_item])
+        self.projects_table.tag_bind(project.treeview_item,
+                                     "<Button-1>",
+                                     lambda event: self.select_project(project))
+        self.projects_table.tag_bind(project.treeview_item,
+                                     "<Button-3>",
+                                     lambda event: open_popup_menu(event, project))
 
     def select_project(self, project: Project):
         if self.timer_active:
@@ -420,7 +434,7 @@ class WorkTimerInterface(tk.Tk):
     def finish_project(self, project):
         project.active = False
         self.projects_table.set(project.treeview_item, "status", format_status(project.active))
-        self.projects_table.item(project.treeview_item, tags=["finished"])
+        self.projects_table.item(project.treeview_item, tags=[project.treeview_item, "finished"])
         self.projects_table.selection_remove(project.treeview_item)
         self.db.update_project(project, active=False)
         self.update_buttons()
