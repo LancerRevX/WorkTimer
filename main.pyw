@@ -228,8 +228,8 @@ class WorkTimerInterface(tk.Tk):
         self.projects = self.db.get_projects()
         for project in self.projects:
             self.insert_project_into_treeview(project)
-        if self.projects and self.projects[-1].active:
-            self.select_project(self.projects[-1])
+        # if self.projects and self.projects[-1].active:
+        #     self.select_project(self.projects[-1])
 
         self.update_buttons()
 
@@ -353,7 +353,6 @@ class WorkTimerInterface(tk.Tk):
                                 format_money(calculate_money(total_seconds, project.rate)))
 
         self.projects_table.item(project.treeview_item,
-                                 open=True,
                                  tags=["active" if project.active else "finished", project.treeview_item])
         self.projects_table.tag_bind(project.treeview_item,
                                      "<Button-1>",
